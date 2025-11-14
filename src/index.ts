@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import express from 'express'
+import faviconRouter from './routes/favicon.download.js'
 
 const app = express()
 app.use(express.json())
@@ -12,6 +13,8 @@ const SERVER_PORT =
 app.get('/', (req, res) => {
   res.status(200).send('Hello Weirdo!')
 })
+
+app.use('/favicon/download', faviconRouter)
 
 app.listen(SERVER_PORT, () => {
   console.log(`Server running on http://localhost:${SERVER_PORT}`)
