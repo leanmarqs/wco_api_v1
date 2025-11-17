@@ -13,10 +13,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "cheerio": "^1.1.2",
     "dotenv": "^17.2.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "http-status-codes": "^2.3.0",
+    "lru-cache": "^11.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

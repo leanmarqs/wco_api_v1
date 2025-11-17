@@ -1,52 +1,47 @@
 import express from 'express'
-import { getFavicons } from '../lib/favicon.api.js'
-import { ResponseInfo } from '../types.js'
+import { StatusCodes, ReasonPhrases } from 'http-status-codes'
+import { fetchFaviconsForDomain } from '../services/favicon.service.js'
 
 const router = express.Router()
+
+const log = (...msg: any[]) => console.log('[FAVICON]', ...msg)
+
+const DOMAIN_REGEX = /^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,}$/i
 
 router.get('/:domain', async (req, res) => {
   const startTime = Date.now()
   const { domain } = req.params
 
-  // Validate domain name format
-  if (!/([a-z0-9-]+\.)+[a-z0-9]{1,}$/.test(domain)) {
-    res.status(400).json({
-      error: `Invalid domain name format.`,
-      domain: `${domain}`,
+  // Validate domain format
+  if (!DOMAIN_REGEX.test(domain)) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      error: ReasonPhrases.BAD_REQUEST,
+      message: 'Invalid domain format.',
+      domain,
     })
   }
 
-  // Define a helper function to handle the response
-  const handleResponse = (data: ResponseInfo, status: number, statusText: string) => {
+  try {
+    log(`Fetching icons for domain: ${domain}`)
+
+    const data = await fetchFaviconsForDomain(domain)
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(3)
 
-    res.status(status).json(data).send(statusText)
+    return res.status(data.status).json({
+      ...data,
+      duration,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  } catch (err: any) {
+    log('Unhandled router error:', err.message)
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      statusText: ReasonPhrases.INTERNAL_SERVER_ERROR,
+      error: err.message,
+    })
   }
-
-  // Fetch favicon using HTTP
-  const data: ResponseInfo = { url: '', host: '', status: 500, statusText: '', icons: [] }
-  const url = `http://${domain}`
-
-  try {
-    const data = await getFavicons({ url })
-
-    if (data.status === 530) return handleResponse(data, 530, 'Error 530')
-    if (data.icons.length > 0) return handleResponse(data, 200, 'OK')
-  } catch (error: any) {
-    console.error('Error fetching HTTP favicons: ', error.message)
-  }
-
-  const icons: { href: string; sizes?: string }[] = []
-  const duration = ((Date.now() - startTime) / 1000).toFixed(3)
-
-  res.status(200).json({
-    url,
-    host: new URL(url).host,
-    status: 200,
-    statusText: 'OK',
-    duration: `${duration}`,
-    icons,
-  })
 })
 
 export default router
